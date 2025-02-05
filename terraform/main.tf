@@ -45,4 +45,3 @@ resource "azurerm_databricks_workspace" "main" {
   location            = azurerm_resource_group.main.location
   sku                 = "standard"
 }
-
