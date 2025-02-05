@@ -1,1 +1,5 @@
 .terraform*
+.env
+push-event.json
+act-artifacts
+run-workflow-locally.txt
