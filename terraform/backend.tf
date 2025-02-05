@@ -9,17 +9,15 @@ terraform {
     resource_group_name  = "terraform"
     storage_account_name = "tfworkspaces"
     container_name       = "tfstates"
-    key                  = "bi-platform"
+    key                  = "bi-platform.tfstate"
     use_azuread_auth     = true
   }
-
 }
 
 provider "azurerm" {
-  features {}
-}
-
-resource "azurerm_resource_group" "state-demo-secure" {
-  name     = "state-demo"
-  location = "eastus"
+  features {
+    key_vault {
+      purge_soft_delete_on_destroy = true
+    }
+  }
 }
