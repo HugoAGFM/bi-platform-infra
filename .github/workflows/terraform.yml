@@ -1,0 +1,63 @@
+name: Terraform CI/CD
+
+on:
+  push:
+    paths:
+      - 'terraform/**/*.tf'
+
+
+env:
+  ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+  ARM_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+  ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+jobs:
+  terraform:
+    name: Terraform
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Initialize Terraform
+        run: terraform init
+
+      - name: Handle Workspace
+        run: |
+          if [ "$GITHUB_REF_NAME" != "main" ]; then
+            if ! terraform workspace list | grep -q dev; then
+              echo "Creating dev workspace"
+              terraform workspace new dev
+            fi
+            terraform workspace select dev
+            echo "Not on main branch - using dev workspace"
+          else
+            if ! terraform workspace list | grep -q prd; then
+              echo "Creating prd workspace"
+              terraform workspace new prd
+            fi
+            terraform workspace select prd
+            echo "On main branch - using prd workspace"
+          fi
+
+      - name: Terraform Plan
+        run: |
+          terraform plan -no-color -out=tfplan
+          terraform show -no-color tfplan > plan_output.txt
+
+      - name: Upload Plan Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan
+          path: ./terraform/plan_output.txt
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve tfplan
